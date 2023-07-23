@@ -11,12 +11,13 @@ pub fn fix_menu_first_game(
     main_menu_query: Query<Entity, With<MainMenu>>,
     mut timer: ResMut<FixMenuTimer>,
     time: Res<Time>,
+    game_state_const: Res<State<GameState>>,
 ) {
     if let Ok(menu_entity) = main_menu_query.get_single() {
         timer.timer.tick(time.delta());
         if timer.timer.just_finished() {
             commands.entity(menu_entity).despawn_recursive();
-            build_main_menu(&mut commands, &asset_server, window_query);
+            build_main_menu(&mut commands, &asset_server, window_query, game_state_const);
         }
     }
 }
@@ -126,14 +127,30 @@ pub fn spawn_main_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     window_query: Query<&Window, With<PrimaryWindow>>,
+    game_state_const: Res<State<GameState>>,
 ) {
-    build_main_menu(&mut commands, &asset_server, window_query);
+    build_main_menu(&mut commands, &asset_server, window_query, game_state_const);
+}
+
+fn play_or_resume(game_state_const: Res<State<GameState>>) -> &'static str {
+    match *game_state_const.get() {
+        GameState::Menu => {
+            return "sprites/Play-Button.png";
+        }
+        GameState::Paused => {
+            return "sprites/Resume-Button.png";
+        }
+        GameState::Game => {
+            return "sprites/Play-Button.png";
+        }
+    }
 }
 
 fn build_main_menu(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     window_query: Query<&Window, With<PrimaryWindow>>,
+    game_state_const: Res<State<GameState>>,
 ) -> Entity {
     let main_menu_entity = commands
         .spawn((
@@ -195,7 +212,7 @@ fn build_main_menu(
                     style: button_style(),
                     background_color: NORMAL_BUTTON_COLOR.into(),
                     image: UiImage {
-                        texture: asset_server.load("sprites/Play-Button.png"),
+                        texture: asset_server.load(play_or_resume(game_state_const)),
                         ..default()
                     },
                     ..default()
