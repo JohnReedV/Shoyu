@@ -12,7 +12,7 @@ pub fn main_menu_style(window_query: Query<&Window, With<PrimaryWindow>>) -> Sty
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
         margin: UiRect {
-            left: Val::Px((window.width() / 2.0) - 165.0),
+            left: Val::Px((window.width() / 2.0) - 315.0),
             right: Val::Px(0.0),
             top: Val::Px(0.0),
             bottom: Val::Px(0.0),
@@ -28,6 +28,12 @@ pub fn button_style() -> Style {
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
         border: UiRect::all(Val::Px(5.0)),
+        margin: UiRect {
+            left: Val::Px(0.0),
+            right: Val::Px(0.0),
+            top: Val::Px(10.0),
+            bottom: Val::Px(10.0),
+        },
         ..default()
     }
 }
@@ -37,6 +43,12 @@ pub fn title_style() -> Style {
         flex_direction: FlexDirection::Row,
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
+        margin: UiRect {
+            left: Val::Px(0.0),
+            right: Val::Px(0.0),
+            top: Val::Px(0.0),
+            bottom: Val::Px(100.0),
+        },
         ..default()
     }
 }
@@ -44,7 +56,7 @@ pub fn title_style() -> Style {
 pub fn get_title_text_style(asset_server: &Res<AssetServer>) -> TextStyle {
     TextStyle {
         font: asset_server.load("fonts/Righteous-Regular.ttf"),
-        font_size: 128.0,
+        font_size: 256.0,
         color: Color::rgb(0.15, 0.15, 0.15),
     }
 }
@@ -52,7 +64,7 @@ pub fn get_title_text_style(asset_server: &Res<AssetServer>) -> TextStyle {
 pub fn get_shadow_text_style(asset_server: &Res<AssetServer>) -> TextStyle {
     TextStyle {
         font: asset_server.load("fonts/Righteous-Regular.ttf"),
-        font_size: 128.0,
+        font_size: 256.0,
         color: Color::BLACK,
     }
 }
