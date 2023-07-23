@@ -75,6 +75,10 @@ pub fn interact_play_button(
 
 pub fn interact_quit_button(
     mut app_exit_event_writer: EventWriter<AppExit>,
+    mut game_state: ResMut<NextState<GameState>>,
+    game_state_const: Res<State<GameState>>,
+    main_menu_query: Query<Entity, With<MainMenu>>,
+    mut commands: Commands,
     mut button_query: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<QuitButton>),
@@ -84,7 +88,20 @@ pub fn interact_quit_button(
         match *interaction {
             Interaction::Pressed => {
                 *background_color = PRESSED_BUTTON_COLOR.into();
-                app_exit_event_writer.send(AppExit);
+
+                match *game_state_const.get() {
+                    GameState::Menu => {
+                        game_state.set(GameState::Game);
+                        app_exit_event_writer.send(AppExit);
+                    }
+                    GameState::Paused => {
+                        if let Ok(main_menu_entity) = main_menu_query.get_single() {
+                            commands.entity(main_menu_entity).despawn();
+                        }
+                        game_state.set(GameState::Menu);
+                    }
+                    GameState::Game => {}
+                }
             }
             Interaction::Hovered => {
                 *background_color = HOVERED_BUTTON_COLOR.into();
@@ -132,7 +149,7 @@ pub fn spawn_main_menu(
     build_main_menu(&mut commands, &asset_server, window_query, game_state_const);
 }
 
-fn play_or_resume(game_state_const: Res<State<GameState>>) -> &'static str {
+fn play_or_resume(game_state_const: &Res<State<GameState>>) -> &'static str {
     match *game_state_const.get() {
         GameState::Menu => {
             return "sprites/Play-Button.png";
@@ -142,6 +159,20 @@ fn play_or_resume(game_state_const: Res<State<GameState>>) -> &'static str {
         }
         GameState::Game => {
             return "sprites/Play-Button.png";
+        }
+    }
+}
+
+fn quit_or_main_menu(game_state_const: &Res<State<GameState>>) -> &'static str {
+    match *game_state_const.get() {
+        GameState::Menu => {
+            return "sprites/Quit-Button.png";
+        }
+        GameState::Paused => {
+            return "sprites/Menu-Button.png";
+        }
+        GameState::Game => {
+            return "sprites/Quit-Button.png";
         }
     }
 }
@@ -212,7 +243,7 @@ fn build_main_menu(
                     style: button_style(),
                     background_color: NORMAL_BUTTON_COLOR.into(),
                     image: UiImage {
-                        texture: asset_server.load(play_or_resume(game_state_const)),
+                        texture: asset_server.load(play_or_resume(&game_state_const)),
                         ..default()
                     },
                     ..default()
@@ -238,7 +269,7 @@ fn build_main_menu(
                     style: button_style(),
                     background_color: NORMAL_BUTTON_COLOR.into(),
                     image: UiImage {
-                        texture: asset_server.load("sprites/Quit-Button.png"),
+                        texture: asset_server.load(quit_or_main_menu(&game_state_const)),
                         ..default()
                     },
                     ..default()
