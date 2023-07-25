@@ -4,10 +4,14 @@ use bevy::{
 };
 
 mod menu;
+mod world;
 mod systems;
+mod resources;
 
 use menu::MainMenuPlugin;
 use systems::*;
+use world::WorldPlugin;
+use resources::*;
 
 fn main() {
     App::new()
@@ -23,7 +27,10 @@ fn main() {
                 ..default()
             }),
             MainMenuPlugin,
+            WorldPlugin,
         ))
+        .add_event::<GameStart>()
+        .add_event::<GameOver>()
         .add_systems(Startup, spawn_camera)
         .run();
 }

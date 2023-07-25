@@ -3,6 +3,7 @@ use bevy::{app::AppExit, prelude::*, window::PrimaryWindow};
 use crate::menu::components::*;
 use crate::menu::resources::*;
 use crate::menu::styles::*;
+use crate::resources::*;
 
 pub fn setup_cursor(
     mut windows: Query<&mut Window>,
@@ -24,7 +25,7 @@ pub fn setup_cursor(
             transform: Transform::from_translation(cursor_spawn),
             ..default()
         },
-        GameCursor {}
+        GameCursor {},
     ));
 }
 
@@ -33,10 +34,9 @@ pub fn move_cursor(window: Query<&Window>, mut cursor: Query<&mut Style, With<Ga
     if let Some(position) = window.cursor_position() {
         let mut img_style = cursor.single_mut();
         img_style.left = Val::Px(position.x - 2.0);
-        img_style.bottom = Val::Px((window.height() - position.y) -24.0);
+        img_style.bottom = Val::Px((window.height() - position.y) - 24.0);
     }
 }
-
 
 pub fn fix_menu_first_game(
     window_query: Query<&Window, With<PrimaryWindow>>,
@@ -81,6 +81,7 @@ pub fn interact_play_button(
     >,
     mut game_state: ResMut<NextState<GameState>>,
     game_state_const: Res<State<GameState>>,
+    mut game_start_event_writer: EventWriter<GameStart>,
 ) {
     if let Ok((interaction, mut background_color)) = button_query.get_single_mut() {
         match *interaction {
@@ -90,6 +91,7 @@ pub fn interact_play_button(
                 match *game_state_const.get() {
                     GameState::Menu => {
                         game_state.set(GameState::Game);
+                        game_start_event_writer.send(GameStart {})
                     }
                     GameState::Paused => {
                         game_state.set(GameState::Game);
@@ -117,6 +119,7 @@ pub fn interact_quit_button(
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<QuitButton>),
     >,
+    mut game_over_event_writer: EventWriter<GameOver>,
 ) {
     if let Ok((interaction, mut background_color)) = button_query.get_single_mut() {
         match *interaction {
@@ -133,6 +136,7 @@ pub fn interact_quit_button(
                             commands.entity(main_menu_entity).despawn();
                         }
                         game_state.set(GameState::Menu);
+                        game_over_event_writer.send(GameOver {})
                     }
                     GameState::Game => {}
                 }
