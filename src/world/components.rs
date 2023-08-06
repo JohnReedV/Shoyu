@@ -11,6 +11,7 @@ pub struct Position {
     pub y: f32,
 }
 
+#[derive(Copy, Clone)]
 pub enum TileType {
     Ground,
     Water,

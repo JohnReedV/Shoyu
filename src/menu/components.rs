@@ -14,4 +14,6 @@ pub struct QuitButton {}
 pub struct OptionsButton {}
 
 #[derive(Component)]
-pub struct GameCursor {}
+pub struct GameCursor {
+    pub despawned: bool
+}
