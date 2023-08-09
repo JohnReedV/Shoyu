@@ -5,8 +5,8 @@ use crate::resources::*;
 use crate::world::components::*;
 
 const WORLD_SIZE: u32 = 1000;
-const TILE_SIZE: f32 = 64.0;
-const CHUNK_SIZE: u32 = 8;
+const TILE_SIZE: f32 = 128.0;
+const CHUNK_SIZE: u32 = 16;
 
 pub fn create_world(commands: Commands, mut reader: EventReader<GameStart>) {
     if let Some(_game_start) = reader.iter().last() {
@@ -28,23 +28,12 @@ pub fn despawn_world(
 }
 
 fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, _chunk_biomes: &Vec<Vec<TileType>>) {
-    let mut rng = rand::thread_rng();
-
     for row in world {
         for tile in row {
             let color = match tile.tile_type {
-                TileType::Ground => {
-                    let shade: f32 = rng.gen_range(0.0..=1.0);
-                    Color::rgb(0.0 * shade, 0.8 * shade, 0.2 * shade)
-                }
-                TileType::Water => {
-                    let shade: f32 = rng.gen_range(0.0..=1.0);
-                    Color::rgb(0.1 * shade, 0.2 * shade, 0.8 * shade)
-                }
-                TileType::Mountain => {
-                    let shade: f32 = rng.gen_range(0.0..=1.0);
-                    Color::rgb(0.6 * shade, 0.0 * shade, 0.1 * shade)
-                }
+                TileType::Ground => Color::rgb(0.0, 0.8, 0.2),
+                TileType::Water => Color::rgb(0.1, 0.2, 0.8),
+                TileType::Mountain => Color::rgb(0.6, 0.0, 0.1),
             };
 
             commands.spawn((
@@ -89,26 +78,12 @@ fn generate_world() -> (Vec<Vec<Tile>>, Vec<Vec<TileType>>) {
                     let mut final_tile_type = tile_type.clone();
 
                     if x == 0 || x == CHUNK_SIZE - 1 || y == 0 || y == CHUNK_SIZE - 1 {
-                        let dx = if x == 0 {
-                            -1
-                        } else if x == CHUNK_SIZE - 1 {
-                            1
-                        } else {
-                            0
-                        };
-                        let dy = if y == 0 {
-                            -1
-                        } else if y == CHUNK_SIZE - 1 {
-                            1
-                        } else {
-                            0
-                        };
                         let neighbor_biome = get_neighbor_biome(
                             &chunk_biomes,
                             chunk_x as i32,
                             chunk_y as i32,
-                            dx,
-                            dy,
+                            x as i32,
+                            y as i32,
                         );
                         if neighbor_biome != tile_type {
                             final_tile_type = blend(tile_type.clone(), neighbor_biome);
@@ -137,9 +112,24 @@ fn get_neighbor_biome(
     chunk_biomes: &Vec<Vec<TileType>>,
     chunk_x: i32,
     chunk_y: i32,
-    dx: i32,
-    dy: i32,
+    x: i32,
+    y: i32,
 ) -> TileType {
+    let dx = if x == 0 {
+        -1
+    } else if x == CHUNK_SIZE as i32 - 1 {
+        1
+    } else {
+        0
+    };
+    let dy = if y == 0 {
+        -1
+    } else if y == CHUNK_SIZE as i32 - 1 {
+        1
+    } else {
+        0
+    };
+
     let neighbor_x = (chunk_x + dx) as usize;
     let neighbor_y = (chunk_y + dy) as usize;
 
