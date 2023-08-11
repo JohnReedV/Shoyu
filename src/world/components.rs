@@ -18,3 +18,6 @@ pub enum TileType {
     Water,
     Mountain,
 }
+
+#[derive(Component)]
+pub struct ChunkLine {}

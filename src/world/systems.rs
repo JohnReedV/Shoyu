@@ -1,19 +1,24 @@
-use std::cmp::*;
-use std::ops::RangeInclusive;
 use bevy::prelude::*;
 use rand::prelude::*;
+use std::cmp::*;
+use std::ops::RangeInclusive;
 
 use crate::resources::*;
 use crate::world::components::*;
+use crate::world::resources::*;
 use crate::world::utils::*;
 
 pub const CHUNK_SIZE: i32 = 16;
-pub const TILE_SIZE: f32 = 12.0;
+pub const TILE_SIZE: f32 = 32.0;
 pub const WORLD_SIZE: i32 = (CHUNK_SIZE * (TILE_SIZE as i32) + 15) / 16 * 16;
 
-pub fn create_world(commands: Commands, mut reader: EventReader<GameStart>) {
+pub fn create_world(
+    commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut reader: EventReader<GameStart>,
+) {
     if let Some(_game_start) = reader.iter().last() {
-        render_world(commands, generate_world());
+        render_world(commands, generate_world(), asset_server);
     }
 }
 
@@ -21,40 +26,67 @@ pub fn despawn_world(
     mut commands: Commands,
     mut reader: EventReader<GameOver>,
     world_query: Query<Entity, With<Tile>>,
+    chunk_line_query: Query<Entity, With<ChunkLine>>,
 ) {
     if let Some(_game_over) = reader.iter().last() {
         for world_entity in world_query.iter() {
             commands.entity(world_entity).despawn_recursive();
         }
+
+        if let Some(_game_over) = reader.iter().last() {
+            despawn_chunk_outlines(chunk_line_query, commands);
+        }
     }
 }
 
-fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>) {
+pub fn toggle_chunk_outlines(
+    mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut chunk_line_render_state: ResMut<NextState<ChunkLineRenderState>>,
+    chunk_line_render_state_const: Res<State<ChunkLineRenderState>>,
+    chunk_line_query: Query<Entity, With<ChunkLine>>,
+) {
+    match *chunk_line_render_state_const.get() {
+        ChunkLineRenderState::Off => {
+            if keyboard_input.just_pressed(KeyCode::B) {
+                for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
+                    for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
+                        render_chunk_outline(&mut commands, chunk_x, chunk_y);
+                    }
+                }
+                chunk_line_render_state.set(ChunkLineRenderState::On)
+            }
+        }
+        ChunkLineRenderState::On => {
+            if keyboard_input.just_pressed(KeyCode::B) {
+                despawn_chunk_outlines(chunk_line_query, commands);
+                chunk_line_render_state.set(ChunkLineRenderState::Off)
+            }
+        }
+    }
+}
+
+fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {
     for row in world {
         for tile in row {
-            let color = match tile.tile_type {
-                TileType::Ground => Color::rgb(0.0, 0.8, 0.2),
-                TileType::Water => Color::rgb(0.1, 0.2, 0.8),
-                TileType::Mountain => Color::rgb(0.6, 0.0, 0.1),
+            let water_handle = assets.load("sprites/water.png").into();
+            let grass_handle = assets.load("sprites/grass.png").into();
+            let ground_handle = assets.load("sprites/ground.png").into();
+
+            let texture_handle = match tile.tile_type {
+                TileType::Ground => ground_handle,
+                TileType::Water => water_handle,
+                TileType::Mountain => grass_handle,
             };
 
             commands.spawn((
                 SpriteBundle {
-                    sprite: Sprite {
-                        color,
-                        custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
-                        ..default()
-                    },
+                    texture: texture_handle,
                     transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.0),
                     ..default()
                 },
                 tile,
             ));
-        }
-    }
-    for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
-        for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
-            render_chunk_outline(&mut commands, chunk_x, chunk_y);
         }
     }
 }
@@ -100,7 +132,7 @@ fn generate_world() -> Vec<Vec<Tile>> {
 }
 
 fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
-    const BLEND_RANGE: RangeInclusive<i32> = 1..=4;
+    const BLEND_RANGE: RangeInclusive<i32> = 1..=3;
 
     let mut rng = rand::thread_rng();
     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::world::systems::*;
+use crate::world::components::*;
 
 pub fn render_chunk_outline(commands: &mut Commands, chunk_x: i32, chunk_y: i32) {
     // Define the positions of the chunk's corners
@@ -26,7 +27,7 @@ pub fn render_chunk_outline(commands: &mut Commands, chunk_x: i32, chunk_y: i32)
             1.0,
         ),
         ..default()
-    },));
+    },ChunkLine {}));
 
     // Render the bottom line
     commands.spawn((SpriteBundle {
@@ -41,7 +42,7 @@ pub fn render_chunk_outline(commands: &mut Commands, chunk_x: i32, chunk_y: i32)
             1.0,
         ),
         ..default()
-    },));
+    },ChunkLine {}));
 
     // Render the left line
     commands.spawn((SpriteBundle {
@@ -56,7 +57,7 @@ pub fn render_chunk_outline(commands: &mut Commands, chunk_x: i32, chunk_y: i32)
             1.0,
         ),
         ..default()
-    },));
+    },ChunkLine {}));
 
     // Render the right line
     commands.spawn((SpriteBundle {
@@ -71,9 +72,14 @@ pub fn render_chunk_outline(commands: &mut Commands, chunk_x: i32, chunk_y: i32)
             1.0,
         ),
         ..default()
-    },));
+    },ChunkLine {}));
 }
 
+pub fn despawn_chunk_outlines(chunk_line_query: Query<Entity, With<ChunkLine>>,  mut commands: Commands) {
+    for entity in chunk_line_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
 
 // fn beb(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
 //     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
