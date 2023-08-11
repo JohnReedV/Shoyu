@@ -161,79 +161,57 @@ fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
                         let mut chunk_distance = i32::MAX;
 
                         for cx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_chunk_x = chunk_x as i32 + cx;
-                            let check_chunk_y = chunk_y as i32;
+                            let check_chunk_x = (chunk_x + cx) as usize;
+                            let check_chunk_y = chunk_y as usize;
 
-                            if check_chunk_x < 0
-                                || check_chunk_y < 0
-                                || check_chunk_y as usize >= chunk_biomes.len()
-                                || check_chunk_x as usize
-                                    >= chunk_biomes[check_chunk_y as usize].len()
+                            if check_chunk_y >= chunk_biomes.len()
+                                || check_chunk_x >= chunk_biomes[check_chunk_y].len()
                             {
                                 continue;
                             }
 
-                            if chunk_biomes[check_chunk_x as usize][check_chunk_y as usize]
-                                == possible_tile_type
-                            {
+                            if chunk_biomes[check_chunk_x][check_chunk_y] == possible_tile_type {
                                 chunk_distance = chunk_distance.min(cx.abs());
                             }
                         }
 
                         for cy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_chunk_x = chunk_x as i32;
-                            let check_chunk_y = chunk_y as i32 + cy;
+                            let check_chunk_x = chunk_x as usize;
+                            let check_chunk_y = (chunk_y + cy) as usize;
 
-                            if check_chunk_x < 0
-                                || check_chunk_y < 0
-                                || check_chunk_y as usize >= chunk_biomes.len()
-                                || check_chunk_x as usize
-                                    >= chunk_biomes[check_chunk_y as usize].len()
+                            if check_chunk_y >= chunk_biomes.len()
+                                || check_chunk_x >= chunk_biomes[check_chunk_y].len()
                             {
                                 continue;
                             }
 
-                            if chunk_biomes[check_chunk_x as usize][check_chunk_y as usize]
-                                == possible_tile_type
-                            {
+                            if chunk_biomes[check_chunk_x][check_chunk_y] == possible_tile_type {
                                 chunk_distance = chunk_distance.min(cy.abs());
                             }
                         }
 
                         for dx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_x = world_x as i32 + dx;
-                            let check_y = world_y as i32;
+                            let check_x = (world_x as i32 + dx) as usize;
+                            let check_y = world_y as usize;
 
-                            if check_x < 0
-                                || check_y < 0
-                                || check_y as usize >= world.len()
-                                || check_x as usize >= world[check_y as usize].len()
-                            {
+                            if check_y >= world.len() || check_x >= world[check_y].len() {
                                 continue;
                             }
 
-                            if world[check_y as usize][check_x as usize].tile_type
-                                == possible_tile_type
-                            {
+                            if world[check_y][check_x].tile_type == possible_tile_type {
                                 tile_distance = tile_distance.min(dx.abs());
                             }
                         }
 
                         for dy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_x = world_x as i32;
-                            let check_y = world_y as i32 + dy;
+                            let check_x = world_x as usize;
+                            let check_y = (world_y as i32 + dy) as usize;
 
-                            if check_x < 0
-                                || check_y < 0
-                                || check_y as usize >= world.len()
-                                || check_x as usize >= world[check_y as usize].len()
-                            {
+                            if check_y >= world.len() || check_x >= world[check_y].len() {
                                 continue;
                             }
 
-                            if world[check_y as usize][check_x as usize].tile_type
-                                == possible_tile_type
-                            {
+                            if world[check_y][check_x].tile_type == possible_tile_type {
                                 tile_distance = tile_distance.min(dy.abs());
                             }
                         }
