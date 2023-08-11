@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 
-use crate::player::components::*;
 use crate::resources::*;
 use crate::components::*;
 

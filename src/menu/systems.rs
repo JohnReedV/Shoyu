@@ -8,7 +8,6 @@ use crate::components::*;
 use crate::menu::components::*;
 use crate::menu::resources::*;
 use crate::menu::styles::*;
-use crate::player::*;
 use crate::resources::*;
 
 pub fn setup_cursor(
