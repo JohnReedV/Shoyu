@@ -1,17 +1,19 @@
+use std::cmp::*;
+use std::ops::RangeInclusive;
 use bevy::prelude::*;
 use rand::prelude::*;
 
 use crate::resources::*;
 use crate::world::components::*;
+use crate::world::utils::*;
 
-const WORLD_SIZE: u32 = 1000;
-const TILE_SIZE: f32 = 128.0;
-const CHUNK_SIZE: u32 = 16;
+pub const CHUNK_SIZE: i32 = 16;
+pub const TILE_SIZE: f32 = 12.0;
+pub const WORLD_SIZE: i32 = (CHUNK_SIZE * (TILE_SIZE as i32) + 15) / 16 * 16;
 
 pub fn create_world(commands: Commands, mut reader: EventReader<GameStart>) {
     if let Some(_game_start) = reader.iter().last() {
-        let (world, chunk_biomes) = generate_world();
-        render_world(commands, world, &chunk_biomes);
+        render_world(commands, generate_world());
     }
 }
 
@@ -27,7 +29,7 @@ pub fn despawn_world(
     }
 }
 
-fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, _chunk_biomes: &Vec<Vec<TileType>>) {
+fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>) {
     for row in world {
         for tile in row {
             let color = match tile.tile_type {
@@ -50,11 +52,16 @@ fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, _chunk_biomes: &V
             ));
         }
     }
+    for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
+        for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
+            render_chunk_outline(&mut commands, chunk_x, chunk_y);
+        }
+    }
 }
 
-fn generate_world() -> (Vec<Vec<Tile>>, Vec<Vec<TileType>>) {
+fn generate_world() -> Vec<Vec<Tile>> {
     let mut rng = rand::thread_rng();
-    let mut world = Vec::new();
+    let mut world: Vec<Vec<Tile>> = vec![vec![]; WORLD_SIZE as usize];
 
     let mut chunk_biomes: Vec<Vec<TileType>> =
         vec![
@@ -73,80 +80,144 @@ fn generate_world() -> (Vec<Vec<Tile>>, Vec<Vec<TileType>>) {
             chunk_biomes[chunk_x as usize][chunk_y as usize] = tile_type.clone();
 
             for x in 0..CHUNK_SIZE {
-                let mut row = Vec::new();
                 for y in 0..CHUNK_SIZE {
-                    let mut final_tile_type = tile_type.clone();
-
-                    if x == 0 || x == CHUNK_SIZE - 1 || y == 0 || y == CHUNK_SIZE - 1 {
-                        let neighbor_biome = get_neighbor_biome(
-                            &chunk_biomes,
-                            chunk_x as i32,
-                            chunk_y as i32,
-                            x as i32,
-                            y as i32,
-                        );
-                        if neighbor_biome != tile_type {
-                            final_tile_type = blend(tile_type.clone(), neighbor_biome);
-                        }
-                    }
-
-                    row.push(Tile {
-                        tile_type: final_tile_type,
+                    let tile = Tile {
+                        tile_type: tile_type.clone(),
                         pos: Position {
-                            x: ((chunk_x * CHUNK_SIZE + x) as f32 - WORLD_SIZE as f32 / 2.0)
+                            x: ((chunk_x * CHUNK_SIZE + x) as f32 - WORLD_SIZE as f32 / 2.0 + 0.5)
                                 * TILE_SIZE,
-                            y: ((chunk_y * CHUNK_SIZE + y) as f32 - WORLD_SIZE as f32 / 2.0)
+                            y: ((chunk_y * CHUNK_SIZE + y) as f32 - WORLD_SIZE as f32 / 2.0 + 0.5)
                                 * TILE_SIZE,
                         },
-                    });
+                    };
+                    world[(chunk_y * CHUNK_SIZE + y) as usize].push(tile);
                 }
-                world.push(row);
             }
         }
     }
-
-    (world, chunk_biomes)
+    blend_biomes(&mut world, &chunk_biomes);
+    world
 }
 
-fn get_neighbor_biome(
-    chunk_biomes: &Vec<Vec<TileType>>,
-    chunk_x: i32,
-    chunk_y: i32,
-    x: i32,
-    y: i32,
-) -> TileType {
-    let dx = if x == 0 {
-        -1
-    } else if x == CHUNK_SIZE as i32 - 1 {
-        1
-    } else {
-        0
-    };
-    let dy = if y == 0 {
-        -1
-    } else if y == CHUNK_SIZE as i32 - 1 {
-        1
-    } else {
-        0
-    };
+fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
+    const BLEND_RANGE: RangeInclusive<i32> = 1..=4;
 
-    let neighbor_x = (chunk_x + dx) as usize;
-    let neighbor_y = (chunk_y + dy) as usize;
-
-    if neighbor_x >= WORLD_SIZE as usize / CHUNK_SIZE as usize
-        || neighbor_y >= WORLD_SIZE as usize / CHUNK_SIZE as usize
-    {
-        return TileType::Ground;
-    }
-
-    chunk_biomes[neighbor_x][neighbor_y].clone()
-}
-
-fn blend(tile1: TileType, tile2: TileType) -> TileType {
     let mut rng = rand::thread_rng();
-    if rng.gen_bool(0.5) {
-        tile1
-    } else {
-        tile2
+    for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
+        for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
+            for x in 0..CHUNK_SIZE {
+                for y in 0..CHUNK_SIZE {
+                    let world_x: usize = (chunk_x * CHUNK_SIZE + x) as usize;
+                    let world_y: usize = (chunk_y * CHUNK_SIZE + y) as usize;
+
+                    let current_tile_type: TileType = world[world_y][world_x].tile_type.clone();
+                    let current_chunk_type: TileType =
+                        chunk_biomes[chunk_x as usize][chunk_y as usize];
+
+                    let mut possible_tile_types =
+                        vec![TileType::Ground, TileType::Water, TileType::Mountain];
+                    possible_tile_types.shuffle(&mut rng);
+
+                    for &possible_tile_type in &possible_tile_types {
+                        if possible_tile_type == current_chunk_type
+                            || possible_tile_type == current_tile_type
+                        {
+                            continue;
+                        }
+
+                        let mut tile_distance = i32::MAX;
+                        let mut chunk_distance = i32::MAX;
+
+                        for cx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
+                            let check_chunk_x = chunk_x as i32 + cx;
+                            let check_chunk_y = chunk_y as i32;
+
+                            if check_chunk_x < 0
+                                || check_chunk_y < 0
+                                || check_chunk_y as usize >= chunk_biomes.len()
+                                || check_chunk_x as usize
+                                    >= chunk_biomes[check_chunk_y as usize].len()
+                            {
+                                continue;
+                            }
+
+                            if chunk_biomes[check_chunk_x as usize][check_chunk_y as usize]
+                                == possible_tile_type
+                            {
+                                chunk_distance = chunk_distance.min(cx.abs());
+                            }
+                        }
+
+                        for cy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
+                            let check_chunk_x = chunk_x as i32;
+                            let check_chunk_y = chunk_y as i32 + cy;
+
+                            if check_chunk_x < 0
+                                || check_chunk_y < 0
+                                || check_chunk_y as usize >= chunk_biomes.len()
+                                || check_chunk_x as usize
+                                    >= chunk_biomes[check_chunk_y as usize].len()
+                            {
+                                continue;
+                            }
+
+                            if chunk_biomes[check_chunk_x as usize][check_chunk_y as usize]
+                                == possible_tile_type
+                            {
+                                chunk_distance = chunk_distance.min(cy.abs());
+                            }
+                        }
+
+                        for dx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
+                            let check_x = world_x as i32 + dx;
+                            let check_y = world_y as i32;
+
+                            if check_x < 0
+                                || check_y < 0
+                                || check_y as usize >= world.len()
+                                || check_x as usize >= world[check_y as usize].len()
+                            {
+                                continue;
+                            }
+
+                            if world[check_y as usize][check_x as usize].tile_type
+                                == possible_tile_type
+                            {
+                                tile_distance = tile_distance.min(dx.abs());
+                            }
+                        }
+
+                        for dy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
+                            let check_x = world_x as i32;
+                            let check_y = world_y as i32 + dy;
+
+                            if check_x < 0
+                                || check_y < 0
+                                || check_y as usize >= world.len()
+                                || check_x as usize >= world[check_y as usize].len()
+                            {
+                                continue;
+                            }
+
+                            if world[check_y as usize][check_x as usize].tile_type
+                                == possible_tile_type
+                            {
+                                tile_distance = tile_distance.min(dy.abs());
+                            }
+                        }
+
+                        if BLEND_RANGE.contains(&tile_distance)
+                            && BLEND_RANGE.contains(&chunk_distance)
+                        {
+                            let chance: f32 = 0.625 - (tile_distance + chunk_distance) as f32 / 8.0;
+                            if rng.gen::<f32>() < chance {
+                                world[world_y][world_x].tile_type = possible_tile_type;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
