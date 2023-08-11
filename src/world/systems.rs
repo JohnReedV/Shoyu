@@ -132,7 +132,7 @@ fn generate_world() -> Vec<Vec<Tile>> {
 }
 
 fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
-    const BLEND_RANGE: RangeInclusive<i32> = 1..=3;
+    const BLEND_RANGE: RangeInclusive<i32> = 1..=5;
 
     let mut rng = rand::thread_rng();
     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
@@ -143,86 +143,65 @@ fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
                     let world_y: usize = (chunk_y * CHUNK_SIZE + y) as usize;
 
                     let current_tile_type: TileType = world[world_y][world_x].tile_type.clone();
-                    let current_chunk_type: TileType =
-                        chunk_biomes[chunk_x as usize][chunk_y as usize];
 
                     let mut possible_tile_types =
                         vec![TileType::Ground, TileType::Water, TileType::Mountain];
                     possible_tile_types.shuffle(&mut rng);
 
                     for &possible_tile_type in &possible_tile_types {
-                        if possible_tile_type == current_chunk_type
-                            || possible_tile_type == current_tile_type
-                        {
+                        if possible_tile_type == current_tile_type {
                             continue;
                         }
 
-                        let mut tile_distance = i32::MAX;
-                        let mut chunk_distance = i32::MAX;
+                        let mut is_near_desired_chunk = false;
 
-                        for cx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_chunk_x = (chunk_x + cx) as usize;
-                            let check_chunk_y = chunk_y as usize;
+                        'outer: for dx in -1..=1 {
+                            for dy in -1..=1 {
+                                if dx == 0 && dy == 0 {
+                                    continue;
+                                }
 
-                            if check_chunk_y >= chunk_biomes.len()
-                                || check_chunk_x >= chunk_biomes[check_chunk_y].len()
-                            {
-                                continue;
-                            }
+                                let check_chunk_x = (chunk_x as i32 + dx) as usize;
+                                let check_chunk_y = (chunk_y as i32 + dy) as usize;
 
-                            if chunk_biomes[check_chunk_x][check_chunk_y] == possible_tile_type {
-                                chunk_distance = chunk_distance.min(cx.abs());
-                            }
-                        }
-
-                        for cy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_chunk_x = chunk_x as usize;
-                            let check_chunk_y = (chunk_y + cy) as usize;
-
-                            if check_chunk_y >= chunk_biomes.len()
-                                || check_chunk_x >= chunk_biomes[check_chunk_y].len()
-                            {
-                                continue;
-                            }
-
-                            if chunk_biomes[check_chunk_x][check_chunk_y] == possible_tile_type {
-                                chunk_distance = chunk_distance.min(cy.abs());
+                                if check_chunk_x < chunk_biomes.len()
+                                    && check_chunk_y < chunk_biomes[chunk_x as usize].len()
+                                    && chunk_biomes[check_chunk_x][check_chunk_y]
+                                        == possible_tile_type
+                                {
+                                    is_near_desired_chunk = true;
+                                    break 'outer;
+                                }
                             }
                         }
 
-                        for dx in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_x = (world_x as i32 + dx) as usize;
-                            let check_y = world_y as usize;
+                        if is_near_desired_chunk {
+                            let mut tile_distance = i32::MAX;
 
-                            if check_y >= world.len() || check_x >= world[check_y].len() {
-                                continue;
+                            for dx in BLEND_RANGE.clone() {
+                                let check_x = world_x.wrapping_add(dx as usize);
+                                if check_x < world[world_y].len()
+                                    && world[world_y][check_x].tile_type == possible_tile_type
+                                {
+                                    tile_distance = tile_distance.min(dx.abs());
+                                }
                             }
 
-                            if world[check_y][check_x].tile_type == possible_tile_type {
-                                tile_distance = tile_distance.min(dx.abs());
-                            }
-                        }
-
-                        for dy in -BLEND_RANGE.end()..=*BLEND_RANGE.end() {
-                            let check_x = world_x as usize;
-                            let check_y = (world_y as i32 + dy) as usize;
-
-                            if check_y >= world.len() || check_x >= world[check_y].len() {
-                                continue;
+                            for dy in BLEND_RANGE.clone() {
+                                let check_y = world_y.wrapping_add(dy as usize);
+                                if check_y < world.len()
+                                    && world[check_y][world_x].tile_type == possible_tile_type
+                                {
+                                    tile_distance = tile_distance.min(dy.abs());
+                                }
                             }
 
-                            if world[check_y][check_x].tile_type == possible_tile_type {
-                                tile_distance = tile_distance.min(dy.abs());
-                            }
-                        }
-
-                        if BLEND_RANGE.contains(&tile_distance)
-                            && BLEND_RANGE.contains(&chunk_distance)
-                        {
-                            let chance: f32 = 0.625 - (tile_distance + chunk_distance) as f32 / 8.0;
-                            if rng.gen::<f32>() < chance {
-                                world[world_y][world_x].tile_type = possible_tile_type;
-                                break;
+                            if BLEND_RANGE.contains(&tile_distance) {
+                                let chance: f32 = 0.625 - tile_distance as f32 / 8.0;
+                                if rng.gen::<f32>() < chance {
+                                    world[world_y][world_x].tile_type = possible_tile_type;
+                                    break;
+                                }
                             }
                         }
                     }
