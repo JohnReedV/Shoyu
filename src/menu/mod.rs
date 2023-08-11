@@ -4,18 +4,18 @@ mod styles;
 mod systems;
 
 use bevy::prelude::*;
-use systems::*;
 use resources::*;
+use systems::*;
+use crate::resources::*;
 
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<GameState>()
-        .init_resource::<FixMenuTimer>()
-        .add_systems(Startup, setup_cursor)
-        .add_systems(OnEnter(GameState::Menu), spawn_main_menu)
-        .add_systems(OnEnter(GameState::Paused), spawn_main_menu) 
+        app.init_resource::<FixMenuTimer>()
+            .add_systems(Startup, setup_cursor)
+            .add_systems(OnEnter(GameState::Menu), spawn_main_menu)
+            .add_systems(OnEnter(GameState::Paused), spawn_main_menu)
             .add_systems(
                 Update,
                 (

@@ -1,13 +1,5 @@
 use bevy::prelude::*;
 
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
-pub enum GameState {
-    #[default]
-    Menu,
-    Paused,
-    Game,
-}
-
 #[derive(Resource)]
 pub struct FixMenuTimer {
     pub timer: Timer,

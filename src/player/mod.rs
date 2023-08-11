@@ -4,13 +4,15 @@ mod components;
 mod resources;
 mod systems;
 
+use crate::resources::*;
 use systems::*;
-//use resources::*;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (spawn_player, despawn_player, player_movement));
+        app.add_systems(OnEnter(GameState::Game), spawn_player)
+            .add_systems(OnEnter(GameState::Menu), despawn_player)
+            .add_systems(Update, player_movement.run_if(in_state(GameState::Game)));
     }
 }
