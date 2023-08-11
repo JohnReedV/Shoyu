@@ -14,6 +14,7 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<FixMenuTimer>()
             .init_resource::<FpsTracker>()
+            .init_resource::<DrawCordsTracker>()
             .add_systems(Startup, setup_cursor)
             .add_systems(OnEnter(GameState::Menu), spawn_main_menu)
             .add_systems(OnEnter(GameState::Paused), spawn_main_menu)
@@ -28,6 +29,7 @@ impl Plugin for MainMenuPlugin {
                     pause_game.run_if(not(in_state(GameState::Menu))),
                     move_cursor,
                     fps_system,
+                    draw_cords.run_if(in_state(GameState::Game)),
                 ),
             );
     }

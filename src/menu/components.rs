@@ -20,3 +20,6 @@ pub struct GameCursor {
 
 #[derive(Component)]
 pub struct FPS {}
+
+#[derive(Component)]
+pub struct Cords {}

@@ -43,3 +43,16 @@ impl FpsTracker {
         }
     }
 }
+
+#[derive(Resource)]
+pub struct DrawCordsTracker {
+    pub enabled: bool
+}
+
+impl Default for DrawCordsTracker {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+        }
+    }
+}
