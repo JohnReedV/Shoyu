@@ -17,3 +17,6 @@ pub struct OptionsButton {}
 pub struct GameCursor {
     pub despawned: bool
 }
+
+#[derive(Component)]
+pub struct FPS {}

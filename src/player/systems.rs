@@ -71,7 +71,7 @@ pub fn player_movement(
         transform.translation += move_distance;
 
         player.loc = transform.translation / 32.0;
-
+        println!("{}", player.loc);
         if let Ok(mut camera_transform) = camera_query.get_single_mut() {
             camera_transform.translation.x = transform.translation.x;
             camera_transform.translation.y = transform.translation.y;

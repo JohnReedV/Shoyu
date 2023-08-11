@@ -4,6 +4,7 @@ use bevy::{
     window::{CursorGrabMode, PrimaryWindow},
 };
 
+use crate::components::*;
 use crate::menu::components::*;
 use crate::menu::resources::*;
 use crate::menu::styles::*;
@@ -338,4 +339,48 @@ fn build_main_menu(
         })
         .id();
     return main_menu_entity;
+}
+
+pub fn fps_system(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut tracker: ResMut<FpsTracker>,
+    fps_query: Query<Entity, With<FPS>>,
+    time: Res<Time>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    window_transform_query: Query<&Transform, With<PlayerCamera>>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.just_released(KeyCode::N) {
+        tracker.enabled = !tracker.enabled;
+    }
+
+    for fps_entity in fps_query.iter() {
+        commands.entity(fps_entity).despawn();
+    }
+
+    if tracker.enabled {
+        tracker.update(time);
+
+        if let Ok(window_transform) = window_transform_query.get_single() {
+            let window = window_query.get_single().unwrap();
+            let x = window_transform.translation.x + window.width() / 2.0 - 55.0;
+            let y = window_transform.translation.y + window.height() / 2.0 - 30.0;
+
+            let font = asset_server.load("fonts/Righteous-Regular.ttf");
+            let text_style = TextStyle {
+                font: font,
+                font_size: 30.0,
+                color: Color::WHITE,
+            };
+            commands.spawn((
+                Text2dBundle {
+                    text: Text::from_section(format!("FPS: {}", tracker.fps), text_style),
+                    transform: Transform::from_translation(Vec3::new(x, y, 0.1)),
+                    ..default()
+                },
+                FPS {},
+            ));
+        }
+    }
 }
