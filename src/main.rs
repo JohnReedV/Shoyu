@@ -4,14 +4,17 @@ use bevy::{
 };
 
 mod menu;
-mod world;
-mod systems;
+mod player;
 mod resources;
+mod systems;
+mod world;
+mod components;
 
 use menu::MainMenuPlugin;
+use player::PlayerPlugin;
+use resources::*;
 use systems::*;
 use world::WorldPlugin;
-use resources::*;
 
 fn main() {
     App::new()
@@ -28,6 +31,7 @@ fn main() {
             }),
             MainMenuPlugin,
             WorldPlugin,
+            PlayerPlugin,
         ))
         .add_event::<GameStart>()
         .add_event::<GameOver>()
