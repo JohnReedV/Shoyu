@@ -13,7 +13,7 @@ pub fn spawn_player(
     if let Some(_game_start) = reader.iter().last() {
         commands.spawn((
             SpriteBundle {
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                transform: Transform::from_xyz(0.0, 0.0, 1.0),
                 texture: asset_server.load("sprites/player.png"),
                 ..default()
             },

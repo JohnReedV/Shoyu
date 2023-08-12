@@ -15,7 +15,7 @@ pub struct Position {
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum TileType {
     Ground,
-    Water,
+    Thud,
     Mountain,
 }
 
