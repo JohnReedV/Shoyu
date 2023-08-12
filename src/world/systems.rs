@@ -178,13 +178,12 @@ fn generate_world() -> Vec<Vec<Tile>> {
         }
     }
     blend_biomes(&mut world, &chunk_biomes);
-    world.reverse(); //blend both chunk sides
-    blend_biomes(&mut world, &chunk_biomes);
     return world;
 }
 
 fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
-    const BLEND_RANGE: RangeInclusive<i32> = 1..=5;
+    const BLEND_RANGE: RangeInclusive<i32> = -5..=5;
+    const BLEND_CHANCE: f32 = 0.41;
 
     let mut rng = rand::thread_rng();
     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
@@ -255,7 +254,7 @@ fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
                             }
 
                             if BLEND_RANGE.contains(&tile_distance) {
-                                let chance: f32 = 0.5 - tile_distance as f32 / 8.0;
+                                let chance: f32 = BLEND_CHANCE - tile_distance as f32 / 8.0;
                                 if rng.gen::<f32>() < chance {
                                     world[world_y][world_x].tile_type = possible_tile_type;
                                     break;
