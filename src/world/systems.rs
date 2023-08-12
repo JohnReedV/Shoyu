@@ -67,19 +67,15 @@ pub fn toggle_chunk_outlines(
     }
 }
 
-fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {
+fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {    
     for row in world {
         for tile in row {
-            let thud_handle = assets.load("sprites/thud.png").into();
-            let grass_handle = assets.load("sprites/grass.png").into();
-            let ground_handle = assets.load("sprites/ground.png").into();
-            let water_handle = assets.load("sprites/water.png").into();
 
             let texture_handle = match tile.tile_type {
-                TileType::Ground => ground_handle,
-                TileType::Thud => thud_handle,
-                TileType::Mountain => grass_handle,
-                TileType::Water => water_handle,
+                TileType::Ground => assets.load("sprites/ground.png").into(),
+                TileType::Thud => assets.load("sprites/thud.png").into(),
+                TileType::Mountain => assets.load("sprites/grass.png").into(),
+                TileType::Water => assets.load("sprites/water.png").into(),
             };
 
             commands.spawn((
