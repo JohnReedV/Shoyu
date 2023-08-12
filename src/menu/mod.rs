@@ -30,6 +30,7 @@ impl Plugin for MainMenuPlugin {
                     move_cursor,
                     fps_system,
                     draw_cords.run_if(in_state(GameState::Game)),
+                    zoom_camera_system.run_if(in_state(GameState::Game))
                 ),
             );
     }

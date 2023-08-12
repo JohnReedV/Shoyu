@@ -1,6 +1,8 @@
 use bevy::{
     app::AppExit,
+    input::mouse::MouseWheel,
     prelude::*,
+    render::camera::OrthographicProjection,
     window::{CursorGrabMode, PrimaryWindow},
 };
 
@@ -428,3 +430,26 @@ pub fn draw_cords(
         }
     }
 }
+
+pub fn zoom_camera_system(
+    mut camera_query: Query<&mut OrthographicProjection, With<PlayerCamera>>,
+    mut mouse_wheel_events: EventReader<MouseWheel>,
+) {
+    const ZOOM_SPEED: f32 = 0.1;
+    const MIN_ZOOM: f32 = 0.1;
+    const MAX_ZOOM: f32 = 5.0;
+
+    let mut zoom_factor = 1.0;
+    for event in mouse_wheel_events.iter() {
+        if event.y > 0.0 {
+            zoom_factor -= ZOOM_SPEED;
+        } else if event.y < 0.0 {
+            zoom_factor += ZOOM_SPEED;
+        }
+    }
+
+    for mut projection in camera_query.iter_mut() {
+        projection.scale = (projection.scale * zoom_factor).clamp(MIN_ZOOM, MAX_ZOOM);
+    }
+}
+
