@@ -116,7 +116,6 @@ fn generate_world() -> Vec<Vec<Tile>> {
             let mut potential_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Mountain];
 
             if rng.gen::<f32>() < NEIGHBOR_INFLUENCE_CHANCE && idx_x > 0 && idx_x - 1 < chunk_biomes.len() && idx_y < chunk_biomes[idx_x - 1].len() {
-                println!("hi there");
                 potential_biomes.push(chunk_biomes[idx_x - 1][idx_y].clone());
             }
 
