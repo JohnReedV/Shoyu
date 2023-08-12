@@ -72,11 +72,13 @@ fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<Asset
             let thud_handle = assets.load("sprites/thud.png").into();
             let grass_handle = assets.load("sprites/grass.png").into();
             let ground_handle = assets.load("sprites/ground.png").into();
+            let water_handle = assets.load("sprites/water.png").into();
 
             let texture_handle = match tile.tile_type {
                 TileType::Ground => ground_handle,
                 TileType::Thud => thud_handle,
                 TileType::Mountain => grass_handle,
+                TileType::Water => water_handle,
             };
 
             commands.spawn((
@@ -93,13 +95,14 @@ fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<Asset
 
 fn generate_world() -> Vec<Vec<Tile>> {
     const RANDOM_BIOME_CHANCE: f32 = 0.01;
+    const WATER_CHANCE: f32 = 0.0095;
     const NEIGHBOR_INFLUENCE_CHANCE: f32 = 100.0;
 
     let mut rng = rand::thread_rng();
     let mut world: Vec<Vec<Tile>> = vec![vec![]; WORLD_SIZE as usize];
     let chunk_min = -(WORLD_SIZE / (2 * CHUNK_SIZE));
 
-    let initial_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Mountain];
+    let initial_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Mountain, TileType::Water];
     let mut chunk_biomes: Vec<Vec<TileType>> = vec![vec![]; WORLD_SIZE as usize / CHUNK_SIZE as usize];
     for chunk_row in chunk_biomes.iter_mut() {
         for _ in 0..WORLD_SIZE / CHUNK_SIZE {
@@ -109,26 +112,40 @@ fn generate_world() -> Vec<Vec<Tile>> {
 
     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
         for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
-
             let idx_x = i32_to_usize(chunk_x, chunk_min);
             let idx_y = i32_to_usize(chunk_y, chunk_min);
 
-            let mut potential_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Mountain];
+            let mut potential_biomes: Vec<TileType> =
+                vec![TileType::Ground, TileType::Thud, TileType::Mountain];
 
-            if rng.gen::<f32>() < NEIGHBOR_INFLUENCE_CHANCE && idx_x > 0 && idx_x - 1 < chunk_biomes.len() && idx_y < chunk_biomes[idx_x - 1].len() {
+            if rng.gen::<f32>() < NEIGHBOR_INFLUENCE_CHANCE
+                && idx_x > 0
+                && idx_x - 1 < chunk_biomes.len()
+                && idx_y < chunk_biomes[idx_x - 1].len()
+                && initial_biomes.contains(&chunk_biomes[idx_x - 1][idx_y])
+            {
                 potential_biomes.push(chunk_biomes[idx_x - 1][idx_y].clone());
             }
 
-            if rng.gen::<f32>() < NEIGHBOR_INFLUENCE_CHANCE && idx_y > 0 && idx_x < chunk_biomes.len() && idx_y - 1 < chunk_biomes[idx_x].len() {
+            if rng.gen::<f32>() < NEIGHBOR_INFLUENCE_CHANCE
+                && idx_y > 0
+                && idx_x < chunk_biomes.len()
+                && idx_y - 1 < chunk_biomes[idx_x].len()
+                && initial_biomes.contains(&chunk_biomes[idx_x][idx_y - 1])
+            {
                 potential_biomes.push(chunk_biomes[idx_x][idx_y - 1].clone());
             }
-            
+
             potential_biomes.shuffle(&mut rng);
 
-            let tile_type = if rng.gen::<f32>() < RANDOM_BIOME_CHANCE {
-                *initial_biomes.choose(&mut rng).unwrap()
+            let tile_type = if rng.gen::<f32>() < WATER_CHANCE {
+                TileType::Water
             } else {
-                *potential_biomes.choose(&mut rng).unwrap()
+                if rng.gen::<f32>() < RANDOM_BIOME_CHANCE {
+                    *initial_biomes.choose(&mut rng).unwrap()
+                } else {
+                    *potential_biomes.choose(&mut rng).unwrap()
+                }
             };
 
             if idx_x < chunk_biomes.len() && idx_y < chunk_biomes[idx_x].len() {
@@ -154,9 +171,8 @@ fn generate_world() -> Vec<Vec<Tile>> {
     blend_biomes(&mut world, &chunk_biomes);
     world.reverse(); //blend both chunk sides
     blend_biomes(&mut world, &chunk_biomes);
-    world
+    return world;
 }
-
 
 fn i32_to_usize(coord: i32, min: i32) -> usize {
     (coord - min) as usize
@@ -175,8 +191,15 @@ fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
 
                     let current_tile_type: TileType = world[world_y][world_x].tile_type.clone();
 
-                    let mut possible_tile_types =
-                        vec![TileType::Ground, TileType::Thud, TileType::Mountain];
+                    if current_tile_type == TileType::Water {
+                        continue;
+                    }
+                    let mut possible_tile_types = vec![
+                        TileType::Ground,
+                        TileType::Thud,
+                        TileType::Mountain,
+                        TileType::Water,
+                    ];
                     possible_tile_types.shuffle(&mut rng);
 
                     for &possible_tile_type in &possible_tile_types {

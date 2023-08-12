@@ -17,6 +17,7 @@ pub enum TileType {
     Ground,
     Thud,
     Mountain,
+    Water,
 }
 
 #[derive(Component)]
