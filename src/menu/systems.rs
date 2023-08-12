@@ -347,8 +347,6 @@ pub fn fps_system(
     mut tracker: ResMut<FpsTracker>,
     fps_query: Query<Entity, With<FPS>>,
     time: Res<Time>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    window_transform_query: Query<&Transform, With<PlayerCamera>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_released(KeyCode::N) {
@@ -362,26 +360,25 @@ pub fn fps_system(
     if tracker.enabled {
         tracker.update(time);
 
-        if let Ok(window_transform) = window_transform_query.get_single() {
-            let window = window_query.get_single().unwrap();
-            let x = window_transform.translation.x + window.width() / 2.0 - 55.0;
-            let y = window_transform.translation.y + window.height() / 2.0 - 15.0;
-
-            let font = asset_server.load("fonts/Righteous-Regular.ttf");
-            let text_style = TextStyle {
-                font: font,
-                font_size: 30.0,
-                color: Color::WHITE,
-            };
-            commands.spawn((
-                Text2dBundle {
-                    text: Text::from_section(format!("FPS: {}", tracker.fps), text_style),
-                    transform: Transform::from_translation(Vec3::new(x, y, 0.1)),
+        let font = asset_server.load("fonts/Righteous-Regular.ttf");
+        let text_style = TextStyle {
+            font: font,
+            font_size: 30.0,
+            color: Color::WHITE,
+        };
+        commands.spawn((
+            TextBundle {
+                text: Text::from_section(format!("FPS: {}", tracker.fps), text_style),
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    right: Val::Px(15.0),
+                    top: Val::Px(15.0),
                     ..default()
                 },
-                FPS {},
-            ));
-        }
+                ..default()
+            },
+            FPS {},
+        ));
     }
 }
 
@@ -390,49 +387,44 @@ pub fn draw_cords(
     mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
     player_query: Query<&mut Transform, With<Player>>,
-    window_query: Query<&Window, (With<PrimaryWindow>, Without<Player>)>,
-    window_transform_query: Query<
-        &Transform,
-        (With<PlayerCamera>, Without<PrimaryWindow>, Without<Player>),
-    >,
     mut tracker: ResMut<DrawCordsTracker>,
     cords_query: Query<Entity, With<Cords>>,
 ) {
     if keyboard_input.just_released(KeyCode::M) {
         tracker.enabled = !tracker.enabled;
     }
-    for fps_entity in cords_query.iter() {
-        commands.entity(fps_entity).despawn();
+    for cords_entity in cords_query.iter() {
+        commands.entity(cords_entity).despawn();
     }
 
     if tracker.enabled {
-        if let Ok(window_transform) = window_transform_query.get_single() {
-            if let Ok(player_transform) = player_query.get_single() {
-                let window = window_query.get_single().unwrap();
-                let x = window_transform.translation.x + window.width() / 2.0 - 960.0;
-                let y = window_transform.translation.y + window.height() / 2.0 - 15.0;
-
-                let font = asset_server.load("fonts/Righteous-Regular.ttf");
-                let text_style = TextStyle {
-                    font: font,
-                    font_size: 30.0,
-                    color: Color::WHITE,
-                };
-                commands.spawn((
-                    Text2dBundle {
-                        text: Text::from_section(
-                            format!(
-                                "X: {} Y: {}",
-                                (player_transform.translation.x / 32.0).round(), (player_transform.translation.y / 32.0).round()
-                            ),
-                            text_style,
+        if let Ok(player_transform) = player_query.get_single() {
+            let font = asset_server.load("fonts/Righteous-Regular.ttf");
+            let text_style = TextStyle {
+                font: font,
+                font_size: 30.0,
+                color: Color::WHITE,
+            };
+            commands.spawn((
+                TextBundle {
+                    text: Text::from_section(
+                        format!(
+                            "X: {} Y: {}",
+                            (player_transform.translation.x / 32.0).round(),
+                            (player_transform.translation.y / 32.0).round()
                         ),
-                        transform: Transform::from_translation(Vec3::new(x, y, 0.1)),
+                        text_style,
+                    ),
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(15.0),
+                        top: Val::Px(15.0),
                         ..default()
                     },
-                    FPS {},
-                ));
-            }
+                    ..default()
+                },
+                Cords {},
+            ));
         }
     }
 }
