@@ -145,14 +145,11 @@ fn generate_world() -> Vec<Vec<Tile>> {
                 TileType::Water
             } else {
                 if rng.gen::<f32>() < RANDOM_BIOME_CHANCE {
-                    println!("donkey");
                     *spawnable_biomes.choose(&mut rng).unwrap()
                 } else {
                     if potential_biomes.len() > 0 {
-                        println!("sniff me");
                         *potential_biomes.choose(&mut rng).unwrap()
                     } else {
-                        println!("we");
                         *spawnable_biomes.choose(&mut rng).unwrap()
                     }
                 }
