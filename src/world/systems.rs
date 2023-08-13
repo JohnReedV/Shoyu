@@ -9,7 +9,7 @@ use crate::world::components::*;
 use crate::world::resources::*;
 use crate::world::utils::*;
 
-pub const CHUNK_SIZE: i32 = 16;
+pub const CHUNK_SIZE: i32 = 20;
 pub const TILE_SIZE: f32 = 32.0;
 pub const WORLD_SIZE: i32 = (CHUNK_SIZE * (TILE_SIZE as i32) + 15) / 16 * 16;
 
@@ -67,20 +67,22 @@ pub fn toggle_chunk_outlines(
     }
 }
 
-fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {    
+fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {
+    let ground_material: Handle<Image> = assets.load("sprites/ground.png").into();
+    let thud_material: Handle<Image> = assets.load("sprites/thud.png").into();
+    let mountain_material: Handle<Image> = assets.load("sprites/grass.png").into();
+    let water_material: Handle<Image> = assets.load("sprites/water.png").into();
+
     for row in world {
         for tile in row {
-
-            let texture_handle = match tile.tile_type {
-                TileType::Ground => assets.load("sprites/ground.png").into(),
-                TileType::Thud => assets.load("sprites/thud.png").into(),
-                TileType::Mountain => assets.load("sprites/grass.png").into(),
-                TileType::Water => assets.load("sprites/water.png").into(),
-            };
-
             commands.spawn((
                 SpriteBundle {
-                    texture: texture_handle,
+                    texture: match tile.tile_type {
+                        TileType::Ground => ground_material.clone(),
+                        TileType::Thud => thud_material.clone(),
+                        TileType::Mountain => mountain_material.clone(),
+                        TileType::Water => water_material.clone(),
+                    },
                     transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.0),
                     ..default()
                 },
