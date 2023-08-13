@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Copy)]
 pub struct Tile {
     pub tile_type: TileType,
     pub pos: Position,

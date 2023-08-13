@@ -13,13 +13,10 @@ pub const CHUNK_SIZE: i32 = 20;
 pub const TILE_SIZE: f32 = 32.0;
 pub const WORLD_SIZE: i32 = (CHUNK_SIZE * (TILE_SIZE as i32) + 15) / 16 * 16;
 
-pub fn create_world(
-    commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut reader: EventReader<GameStart>,
-) {
+pub fn create_world(mut reader: EventReader<GameStart>, mut the_world: ResMut<TheWorld>) {
     if let Some(_game_start) = reader.iter().last() {
-        render_world(commands, generate_world(), asset_server);
+        let (world, chunk_biomes) = generate_world();
+        the_world.new(world, chunk_biomes);
     }
 }
 
@@ -68,48 +65,67 @@ pub fn toggle_chunk_outlines(
     }
 }
 
-fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {
-    let ground_material: Handle<Image> = assets.load("sprites/ground.png").into();
-    let thud_material: Handle<Image> = assets.load("sprites/thud.png").into();
-    let grass_material: Handle<Image> = assets.load("sprites/grass.png").into();
-    let water_material: Handle<Image> = assets.load("sprites/water.png").into();
-    let palm_tree_handle: Handle<Image> = assets.load("sprites/palmtree2.png");
+pub fn render_world(
+    mut commands: Commands,
+    the_world: ResMut<TheWorld>,
+    assets: Res<AssetServer>,
+    mut reader: EventReader<GameStart>,
+) {
+    if let Some(_game_over) = reader.iter().last() {
+        let ground_material: Handle<Image> = assets.load("sprites/ground.png").into();
+        let thud_material: Handle<Image> = assets.load("sprites/thud.png").into();
+        let grass_material: Handle<Image> = assets.load("sprites/grass.png").into();
+        let water_material: Handle<Image> = assets.load("sprites/water.png").into();
 
-    for row in world.clone() {
-        for tile in row {
-            let x = tile.pos.x;
-            let y = tile.pos.y;
-            let structure = tile.structure;
-
-            commands.spawn((
-                SpriteBundle {
-                    texture: match tile.tile_type {
-                        TileType::Ground => ground_material.clone(),
-                        TileType::Thud => thud_material.clone(),
-                        TileType::Grass => grass_material.clone(),
-                        TileType::Water => water_material.clone(),
-                    },
-                    transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.0),
-                    ..default()
-                },
-                tile,
-            ));
-
-            if structure == Structure::Tree {
+        for row in the_world.world.clone() {
+            for tile in row {
                 commands.spawn((
                     SpriteBundle {
-                        transform: Transform::from_xyz(x, y, 1.0),
-                        texture: palm_tree_handle.clone(),
+                        texture: match tile.tile_type {
+                            TileType::Ground => ground_material.clone(),
+                            TileType::Thud => thud_material.clone(),
+                            TileType::Grass => grass_material.clone(),
+                            TileType::Water => water_material.clone(),
+                        },
+                        transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.0),
                         ..default()
                     },
-                    PalmTree {},
+                    tile,
                 ));
+                spawn_structure(tile, &mut commands, &assets);
             }
         }
     }
 }
 
-fn generate_world() -> Vec<Vec<Tile>> {
+fn spawn_structure(tile: Tile, commands: &mut Commands, assets: &Res<AssetServer>) {
+    let double_palm_handle: Handle<Image> = assets.load("sprites/palmtree2.png").into();
+    let single_palm_handle: Handle<Image> = assets.load("sprites/palmtree.png").into();
+    let mut rng = rand::thread_rng();
+    let structure = tile.structure;
+
+    match structure {
+        Structure::Tree => {
+            let palm_handle: Handle<Image>;
+            if rng.gen::<f32>() < 0.05 {
+                palm_handle = single_palm_handle.clone();
+            } else {
+                palm_handle = double_palm_handle.clone()
+            }
+            commands.spawn((
+                SpriteBundle {
+                    transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.2),
+                    texture: palm_handle.clone(),
+                    ..default()
+                },
+                PalmTree {},
+            ));
+        }
+        Structure::None => {}
+    }
+}
+
+fn generate_world() -> (Vec<Vec<Tile>>, Vec<Vec<TileType>>) {
     const POTENTIAL_BIOMES_MULTI: f32 = 100.9;
     const RANDOM_BIOME_CHANCE: f32 = 0.0001;
     const WATER_CHANCE: f32 = 0.005;
@@ -195,11 +211,11 @@ fn generate_world() -> Vec<Vec<Tile>> {
     }
     blend_biomes(&mut world, &chunk_biomes);
     fill_world(&mut world, &chunk_biomes);
-    return world;
+    return (world, chunk_biomes);
 }
 
 fn fill_world(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
-    const SPAWN_TREE_CHANCE: f32 = 0.01;
+    pub const SPAWN_TREE_CHANCE: f32 = 0.01;
     let mut rng = rand::thread_rng();
 
     for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
