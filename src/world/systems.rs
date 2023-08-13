@@ -28,15 +28,16 @@ pub fn despawn_world(
     mut reader: EventReader<GameOver>,
     world_query: Query<Entity, With<Tile>>,
     chunk_line_query: Query<Entity, With<ChunkLine>>,
+    palm_query: Query<Entity, With<PalmTree>>,
 ) {
     if let Some(_game_over) = reader.iter().last() {
         for world_entity in world_query.iter() {
             commands.entity(world_entity).despawn_recursive();
         }
-
-        if let Some(_game_over) = reader.iter().last() {
-            despawn_chunk_outlines(chunk_line_query, commands);
+        for palm_entity in palm_query.iter() {
+            commands.entity(palm_entity).despawn_recursive()
         }
+        despawn_chunk_outlines(chunk_line_query, commands);
     }
 }
 
@@ -70,17 +71,22 @@ pub fn toggle_chunk_outlines(
 fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<AssetServer>) {
     let ground_material: Handle<Image> = assets.load("sprites/ground.png").into();
     let thud_material: Handle<Image> = assets.load("sprites/thud.png").into();
-    let mountain_material: Handle<Image> = assets.load("sprites/grass.png").into();
+    let grass_material: Handle<Image> = assets.load("sprites/grass.png").into();
     let water_material: Handle<Image> = assets.load("sprites/water.png").into();
+    let palm_tree_handle: Handle<Image> = assets.load("sprites/palmtree2.png");
 
-    for row in world {
+    for row in world.clone() {
         for tile in row {
+            let x = tile.pos.x;
+            let y = tile.pos.y;
+            let structure = tile.structure;
+
             commands.spawn((
                 SpriteBundle {
                     texture: match tile.tile_type {
                         TileType::Ground => ground_material.clone(),
                         TileType::Thud => thud_material.clone(),
-                        TileType::Mountain => mountain_material.clone(),
+                        TileType::Grass => grass_material.clone(),
                         TileType::Water => water_material.clone(),
                     },
                     transform: Transform::from_xyz(tile.pos.x, tile.pos.y, 0.0),
@@ -88,6 +94,17 @@ fn render_world(mut commands: Commands, world: Vec<Vec<Tile>>, assets: Res<Asset
                 },
                 tile,
             ));
+
+            if structure == Structure::Tree {
+                commands.spawn((
+                    SpriteBundle {
+                        transform: Transform::from_xyz(x, y, 1.0),
+                        texture: palm_tree_handle.clone(),
+                        ..default()
+                    },
+                    PalmTree {},
+                ));
+            }
         }
     }
 }
@@ -100,7 +117,7 @@ fn generate_world() -> Vec<Vec<Tile>> {
     let mut rng = rand::thread_rng();
     let mut world: Vec<Vec<Tile>> = vec![vec![]; WORLD_SIZE as usize];
 
-    let spawnable_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Mountain];
+    let spawnable_biomes: Vec<TileType> = vec![TileType::Ground, TileType::Thud, TileType::Grass];
     let all_biomes: Vec<TileType> = spawnable_biomes
         .iter()
         .cloned()
@@ -169,6 +186,7 @@ fn generate_world() -> Vec<Vec<Tile>> {
                                 + 0.5)
                                 * TILE_SIZE,
                         },
+                        structure: Structure::None,
                     };
                     world[(chunk_y as i32 * CHUNK_SIZE + y) as usize].push(tile);
                 }
@@ -176,7 +194,30 @@ fn generate_world() -> Vec<Vec<Tile>> {
         }
     }
     blend_biomes(&mut world, &chunk_biomes);
+    fill_world(&mut world, &chunk_biomes);
     return world;
+}
+
+fn fill_world(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
+    const SPAWN_TREE_CHANCE: f32 = 0.01;
+    let mut rng = rand::thread_rng();
+
+    for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
+        for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
+            if chunk_biomes[chunk_x as usize][chunk_y as usize] == TileType::Grass {
+                for x in 0..CHUNK_SIZE {
+                    for y in 0..CHUNK_SIZE {
+                        if rng.gen::<f32>() < SPAWN_TREE_CHANCE {
+                            let world_x: f32 = (chunk_x as i32 * CHUNK_SIZE + x) as f32;
+                            let world_y: f32 = (chunk_y as i32 * CHUNK_SIZE + y) as f32;
+
+                            world[world_y as usize][world_x as usize].structure = Structure::Tree;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
@@ -196,12 +237,8 @@ fn blend_biomes(world: &mut Vec<Vec<Tile>>, chunk_biomes: &[Vec<TileType>]) {
                     if current_tile_type == TileType::Water {
                         continue;
                     }
-                    let mut possible_tile_types = vec![
-                        TileType::Ground,
-                        TileType::Thud,
-                        TileType::Mountain,
-                        TileType::Water,
-                    ];
+                    let mut possible_tile_types =
+                        vec![TileType::Ground, TileType::Thud, TileType::Grass, TileType::Water];
                     possible_tile_types.shuffle(&mut rng);
 
                     for &possible_tile_type in &possible_tile_types {
