@@ -4,6 +4,4 @@ use bevy::prelude::*;
 pub struct PlayerCamera {}
 
 #[derive(Component)]
-pub struct Player {
-    pub loc: Vec3
-}
+pub struct Player {}

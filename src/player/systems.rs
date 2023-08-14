@@ -17,13 +17,7 @@ pub fn spawn_player(
                 texture: asset_server.load("sprites/player.png"),
                 ..default()
             },
-            Player {
-                loc: Vec3 {
-                    x: 0.0,
-                    y: 0.0,
-                    z: 0.0,
-                },
-            },
+            Player {},
         ));
     }
 }
@@ -42,11 +36,11 @@ pub fn despawn_player(
 
 pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut Transform, &mut Player), With<Player>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
     mut camera_query: Query<&mut Transform, (With<PlayerCamera>, Without<Player>)>,
     time: Res<Time>,
 ) {
-    if let Ok((mut transform, mut player)) = player_query.get_single_mut() {
+    if let Ok(mut transform) = player_query.get_single_mut() {
         let mut direction = Vec3::ZERO;
 
         if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
@@ -68,8 +62,6 @@ pub fn player_movement(
 
         let move_distance = direction * PLAYER_SPEED as f32 * time.delta_seconds();
         transform.translation += move_distance;
-
-        player.loc = transform.translation / 32.0;
 
         if let Ok(mut camera_transform) = camera_query.get_single_mut() {
             camera_transform.translation.x = transform.translation.x;

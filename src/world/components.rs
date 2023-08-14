@@ -6,6 +6,15 @@ pub struct Tile {
     pub pos: Position,
     pub structure: Structure
 }
+impl Default for Tile {
+    fn default() -> Self {
+        Tile {
+            tile_type: TileType::Grass,
+            pos: Position::default(),
+            structure: Structure::default()
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct Position {
@@ -13,9 +22,19 @@ pub struct Position {
     pub y: f32,
 }
 
-#[derive(Clone, PartialEq, Copy)]
+impl Default for Position {
+    fn default() -> Self {
+        Position {
+            x: 0.0,
+            y: 0.0,
+        }
+    }
+}
+
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum Structure {
     Tree,
+    #[default]
     None
 }
 
