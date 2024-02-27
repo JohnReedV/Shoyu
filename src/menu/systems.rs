@@ -40,7 +40,6 @@ pub fn move_cursor(
     mut windows: Query<&mut Window>,
     mut cursor: Query<(Entity, &mut Style), With<GameCursor>>,
     game_state_const: Res<State<GameState>>,
-    mut commands: Commands,
 ) {
     let mut window: Mut<Window> = windows.single_mut();
     match *game_state_const.get() {
@@ -52,12 +51,11 @@ pub fn move_cursor(
         }
     }
 
-    for (cursor_entity, mut img_style) in cursor.iter_mut() {
+    for (_cursor_entity, mut img_style) in cursor.iter_mut() {
         if let Some(position) = window.cursor_position() {
-            img_style.left = Val::Px(position.x - 2.0);
-            img_style.bottom = Val::Px((window.height() - position.y) - 24.0);
-        } else {
-            commands.entity(cursor_entity).despawn();
+            img_style.left = Val::Px(position.x.clamp(0.0, window.width() - 1.0) - 2.0);
+            img_style.bottom =
+                Val::Px((window.height() - position.y).clamp(0.0, window.height() - 1.0) - 24.0);
         }
     }
 }
@@ -452,4 +450,3 @@ pub fn zoom_camera_system(
         projection.scale = (projection.scale * zoom_factor).clamp(MIN_ZOOM, MAX_ZOOM);
     }
 }
-
