@@ -157,7 +157,7 @@ pub fn interact_quit_button(
                     }
                     GameState::Paused => {
                         if let Ok(main_menu_entity) = main_menu_query.get_single() {
-                            commands.entity(main_menu_entity).despawn();
+                            commands.entity(main_menu_entity).despawn_recursive();
                         }
                         game_state.set(GameState::Menu);
                         game_over_event_writer.send(GameOver {});
