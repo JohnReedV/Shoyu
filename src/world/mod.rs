@@ -14,7 +14,7 @@ pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TheWorld>()
-            .add_state::<ChunkLineRenderState>()
+            .init_state::<ChunkLineRenderState>()
             .add_systems(
                 OnEnter(GameState::Game),
                 (create_world.before(render_world), render_world),

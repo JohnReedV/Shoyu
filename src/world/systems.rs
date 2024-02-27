@@ -14,7 +14,7 @@ pub const TILE_SIZE: f32 = 32.0;
 pub const WORLD_SIZE: i32 = (CHUNK_SIZE * (TILE_SIZE as i32) + 15) / 16 * 16;
 
 pub fn create_world(mut reader: EventReader<GameStart>, mut the_world: ResMut<TheWorld>) {
-    if let Some(_game_start) = reader.iter().last() {
+    if let Some(_game_start) = reader.read().last() {
         let (world, chunk_biomes) = generate_world();
         the_world.new(world, chunk_biomes);
     }
@@ -27,7 +27,7 @@ pub fn despawn_world(
     chunk_line_query: Query<Entity, With<ChunkLine>>,
     palm_query: Query<Entity, With<PalmTree>>,
 ) {
-    if let Some(_game_over) = reader.iter().last() {
+    if let Some(_game_over) = reader.read().last() {
         for world_entity in world_query.iter() {
             commands.entity(world_entity).despawn_recursive();
         }
@@ -40,14 +40,14 @@ pub fn despawn_world(
 
 pub fn toggle_chunk_outlines(
     mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut chunk_line_render_state: ResMut<NextState<ChunkLineRenderState>>,
     chunk_line_render_state_const: Res<State<ChunkLineRenderState>>,
     chunk_line_query: Query<Entity, With<ChunkLine>>,
 ) {
     match *chunk_line_render_state_const.get() {
         ChunkLineRenderState::Off => {
-            if keyboard_input.just_pressed(KeyCode::B) {
+            if keyboard_input.just_pressed(KeyCode::KeyB) {
                 for chunk_x in 0..WORLD_SIZE / CHUNK_SIZE {
                     for chunk_y in 0..WORLD_SIZE / CHUNK_SIZE {
                         render_chunk_outline(&mut commands, chunk_x, chunk_y);
@@ -57,7 +57,7 @@ pub fn toggle_chunk_outlines(
             }
         }
         ChunkLineRenderState::On => {
-            if keyboard_input.just_pressed(KeyCode::B) {
+            if keyboard_input.just_pressed(KeyCode::KeyB) {
                 despawn_chunk_outlines(chunk_line_query, commands);
                 chunk_line_render_state.set(ChunkLineRenderState::Off)
             }
@@ -71,7 +71,7 @@ pub fn render_world(
     assets: Res<AssetServer>,
     mut reader: EventReader<GameStart>,
 ) {
-    if let Some(_game_over) = reader.iter().last() {
+    if let Some(_game_over) = reader.read().last() {
         let ground_material: Handle<Image> = assets.load("sprites/ground.png").into();
         let thud_material: Handle<Image> = assets.load("sprites/thud.png").into();
         let grass_material: Handle<Image> = assets.load("sprites/grass.png").into();

@@ -13,7 +13,7 @@ pub fn spawn_player(
     asset_server: Res<AssetServer>,
     mut reader: EventReader<GameStart>,
 ) {
-    if let Some(_game_start) = reader.iter().last() {
+    if let Some(_game_start) = reader.read().last() {
         commands.spawn((
             SpriteBundle {
                 transform: Transform::from_xyz(0.0, 0.0, 1.0),
@@ -37,7 +37,7 @@ pub fn despawn_player(
     player_query: Query<Entity, With<Player>>,
     mut commands: Commands,
 ) {
-    if let Some(_game_over) = reader.iter().last() {
+    if let Some(_game_over) = reader.read().last() {
         for player_entity in player_query.iter() {
             commands.entity(player_entity).despawn_recursive();
         }
@@ -45,7 +45,7 @@ pub fn despawn_player(
 }
 
 pub fn player_movement(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(&mut Transform, &mut Player), With<Player>>,
     mut camera_query: Query<&mut Transform, (With<PlayerCamera>, Without<Player>)>,
     time: Res<Time>,
@@ -53,16 +53,16 @@ pub fn player_movement(
     if let Ok((mut transform, mut player)) = player_query.get_single_mut() {
         let mut direction = Vec3::ZERO;
 
-        if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
+        if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
             direction += Vec3::new(-1.0, 0.0, 0.0);
         }
-        if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
+        if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
             direction += Vec3::new(1.0, 0.0, 0.0);
         }
-        if keyboard_input.pressed(KeyCode::Up) || keyboard_input.pressed(KeyCode::W) {
+        if keyboard_input.pressed(KeyCode::ArrowUp) || keyboard_input.pressed(KeyCode::KeyW) {
             direction += Vec3::new(0.0, 1.0, 0.0);
         }
-        if keyboard_input.pressed(KeyCode::Down) || keyboard_input.pressed(KeyCode::S) {
+        if keyboard_input.pressed(KeyCode::ArrowDown) || keyboard_input.pressed(KeyCode::KeyS) {
             direction += Vec3::new(0.0, -1.0, 0.0);
         }
 

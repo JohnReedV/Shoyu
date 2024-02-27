@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy= "0.11.0"
+bevy= "0.13.0"
 rand = "0.8.5"
+bitflags = { version = "2.4.2", features = ["serde"] }
 
 [profile.dev]
 opt-level = 1

@@ -32,7 +32,7 @@ fn main() {
             MainMenuPlugin,
             WorldPlugin,
             PlayerPlugin,
-        )).add_state::<GameState>()
+        )).init_state::<GameState>()
         .add_event::<GameStart>()
         .add_event::<GameOver>()
         .add_systems(Startup, spawn_camera)

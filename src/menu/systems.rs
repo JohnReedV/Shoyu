@@ -81,7 +81,7 @@ pub fn fix_menu_first_game(
 }
 
 pub fn pause_game(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut game_state: ResMut<NextState<GameState>>,
     game_state_const: Res<State<GameState>>,
 ) {
@@ -115,7 +115,7 @@ pub fn interact_play_button(
                 match *game_state_const.get() {
                     GameState::Menu => {
                         game_state.set(GameState::Game);
-                        game_start_event_writer.send(GameStart {})
+                        game_start_event_writer.send(GameStart {});
                     }
                     GameState::Paused => {
                         game_state.set(GameState::Game);
@@ -160,7 +160,7 @@ pub fn interact_quit_button(
                             commands.entity(main_menu_entity).despawn();
                         }
                         game_state.set(GameState::Menu);
-                        game_over_event_writer.send(GameOver {})
+                        game_over_event_writer.send(GameOver {});
                     }
                     GameState::Game => {}
                 }
@@ -280,7 +280,7 @@ fn build_main_menu(
                                     "Shoyu",
                                     get_shadow_text_style(&asset_server),
                                 )],
-                                alignment: TextAlignment::Center,
+                                justify: JustifyText::Center,
                                 ..default()
                             },
                             ..default()
@@ -293,7 +293,7 @@ fn build_main_menu(
                                 "Shoyu",
                                 get_title_text_style(&asset_server),
                             )],
-                            alignment: TextAlignment::Center,
+                            justify: JustifyText::Center,
                             ..default()
                         },
                         ..default()
@@ -349,9 +349,9 @@ pub fn fps_system(
     mut tracker: ResMut<FpsTracker>,
     fps_query: Query<Entity, With<FPS>>,
     time: Res<Time>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    if keyboard_input.just_released(KeyCode::N) {
+    if keyboard_input.just_released(KeyCode::KeyN) {
         tracker.enabled = !tracker.enabled;
     }
 
@@ -387,12 +387,12 @@ pub fn fps_system(
 pub fn draw_cords(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     player_query: Query<&mut Transform, With<Player>>,
     mut tracker: ResMut<DrawCordsTracker>,
     cords_query: Query<Entity, With<Cords>>,
 ) {
-    if keyboard_input.just_released(KeyCode::M) {
+    if keyboard_input.just_released(KeyCode::KeyM) {
         tracker.enabled = !tracker.enabled;
     }
     for cords_entity in cords_query.iter() {
@@ -440,7 +440,7 @@ pub fn zoom_camera_system(
     const MAX_ZOOM: f32 = 5.0;
 
     let mut zoom_factor = 1.0;
-    for event in mouse_wheel_events.iter() {
+    for event in mouse_wheel_events.read() {
         if event.y > 0.0 {
             zoom_factor -= ZOOM_SPEED;
         } else if event.y < 0.0 {
